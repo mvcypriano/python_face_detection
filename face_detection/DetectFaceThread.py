@@ -1,4 +1,7 @@
-# python3 DetectFaceThread.py --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel
+# This function creates a new thread every 'time_sec_' seconds if a thread
+# executing the program is not already running. This thread checks for a face
+# and if the face is persisted for more than 'face_appearance_max_' times a
+# picture is taken and saved as face_img.jpg
 from imutils.video import VideoStream
 from RepeatedTimer import RepeatedTimer
 import numpy as np
@@ -9,14 +12,14 @@ import cv2
 import threading
 import time
 
-# construct the argument parse and parse the arguments
-confidence_ = 0.8
+# Global parameters
+confidence_ = 0.6
 face_size_ = 200
 time_sec_ = 0.2
 face_appearance_ = [0];
 
 
-
+# function that checks for face and save it.
 def detect_face(vs):
     relevant_face_counter = 0
     frame = vs.read()
@@ -33,36 +36,39 @@ def detect_face(vs):
     detections = net.forward()
 
     # check for detections
-
+    # loop through all detections
     for i in range(0, detections.shape[2]):
+        # filter detections according to a confidence metric
         confidence = detections[0, 0, i, 2]
         if confidence < confidence_:
             continue
 
+        # certify that a face has at least a certain size, other wise might
+        # detect an unwanted person by accident
         box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
         (startX, startY, endX, endY) = box.astype("int")
         if (endX - startX) < face_size_ or (endY - startY) < face_size_:
             continue
 
         relevant_face_counter = relevant_face_counter + 1
-        print("Detectou")
 
+    # detect a person face for more than 2 seconds before saving image
     if relevant_face_counter == 1:
+        print("Detectou")
         face_appearance_[0] = face_appearance_[0] + 1
         if face_appearance_[0] >= 10:
+            application.stop()
             face_appearance_[0] = 0
-            print("DETECTOU")
+            print("CRIOU IMAGEM")
+            cv2.imwrite('face_img.jpg', frame)
+            body = ""
+            filename = 'face_img.jpg'
+            f = open(filename, "rb")
+            body = f.read()
+            f.close()
+            application.start()
     else:
         face_appearance_[0] = 0
-
-
-    if application.is_canceled:
-        vs.stop()
-        cv2.destroyAllWindows()
-        application.stop()
-
-# do a bit of cleanup
-#cv2.destroyAllWindows()
 
 
 # load serialized model from disk
@@ -75,4 +81,5 @@ net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt",
 vs = VideoStream(src=0).start()
 time.sleep(1.0)
 
+# Calls detect_face every time_sec_ seconds
 application = RepeatedTimer(time_sec_, detect_face, vs)
