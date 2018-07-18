@@ -5,12 +5,10 @@
 from imutils.video import VideoStream
 from RepeatedTimer import RepeatedTimer
 import numpy as np
-import argparse
 import imutils
 import time
 import cv2
 import threading
-import time
 
 # Global parameters
 confidence_ = 0.6
@@ -61,6 +59,7 @@ def detect_face(vs):
             face_appearance_[0] = 0
             print("CRIOU IMAGEM")
             cv2.imwrite('face_img.jpg', frame)
+            # Read the binary file to send data to API
             body = ""
             filename = 'face_img.jpg'
             f = open(filename, "rb")
